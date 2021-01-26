@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.tokml = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.tokml = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 var strxml = require('strxml'),
     tag = strxml.tag,
     encode = strxml.encode;
@@ -28,7 +28,7 @@ function feature(options, styleHashesArray) {
         if (!_.properties || !geometry.valid(_.geometry)) return '';
         var geometryString = geometry.any(_.geometry);
         if (!geometryString) return '';
-        
+
         var styleDefinition = '',
             styleReference = '';
         if (options.simplestyle) {
@@ -40,7 +40,7 @@ function feature(options, styleHashesArray) {
                         styleHashesArray.push(styleHash);
                     }
                     styleReference = tag('styleUrl', '#' + styleHash);
-                } else if ((geometry.isPolygon(_.geometry) || geometry.isLine(_.geometry)) && 
+                } else if ((geometry.isPolygon(_.geometry) || geometry.isLine(_.geometry)) &&
                     hasPolygonAndLineStyle(_.properties)) {
                     if (styleHashesArray.indexOf(styleHash) === -1) {
                         styleDefinition = polygonAndLineStyle(_.properties, styleHash);
@@ -51,7 +51,7 @@ function feature(options, styleHashesArray) {
                 // Note that style of GeometryCollection / MultiGeometry is not supported
             }
         }
-        
+
         return styleDefinition + tag('Placemark',
             name(_.properties, options) +
             description(_.properties, options) +
@@ -65,7 +65,7 @@ function feature(options, styleHashesArray) {
 function root(_, options) {
     if (!_.type) return '';
     var styleHashesArray = [];
-            
+
     switch (_.type) {
         case 'FeatureCollection':
             if (!_.features) return '';
@@ -176,7 +176,13 @@ function linearring(_) {
 
 // ## Data
 function extendeddata(_) {
-    return tag('ExtendedData', pairs(_).map(data).join(''));
+    const dataDefault = ['marker-symbol', 'marker-color', 'marker-size', 'stroke', 'stroke-width',
+    'stroke-opacity', 'fill', 'fill-opacity'];
+
+    return tag('ExtendedData', pairs(_)
+        .filter(item => !dataDefault.includes(item[0]))
+        .map(data)
+        .join(''));
 }
 
 function data(_) {
@@ -232,22 +238,22 @@ function polygonAndLineStyle(_, styleHash) {
         tag('color', hexToKmlColor(_['stroke'], _['stroke-opacity']) || 'ff555555') +
         tag('width', _['stroke-width'] === undefined ? 2 : _['stroke-width'])
     ]);
-    
+
     var polyStyle = '';
-    
+
     if (_['fill'] || _['fill-opacity']) {
         polyStyle = tag('PolyStyle', [
             tag('color', hexToKmlColor(_['fill'], _['fill-opacity']) || '88555555')
         ]);
     }
-    
+
     return tag('Style', lineStyle + polyStyle, [['id', styleHash]]);
 }
 
 // ## Style helpers
 function hashStyle(_) {
     var hash = '';
-    
+
     if (_['marker-symbol']) hash = hash + 'ms' + _['marker-symbol'];
     if (_['marker-color']) hash = hash + 'mc' + _['marker-color'].replace('#', '');
     if (_['marker-size']) hash = hash + 'ms' + _['marker-size'];
@@ -256,34 +262,34 @@ function hashStyle(_) {
     if (_['stroke-opacity']) hash = hash + 'mo' + _['stroke-opacity'].toString().replace('.', '');
     if (_['fill']) hash = hash + 'f' + _['fill'].replace('#', '');
     if (_['fill-opacity']) hash = hash + 'fo' + _['fill-opacity'].toString().replace('.', '');
-    
+
     return hash;
 }
 
 function hexToKmlColor(hexColor, opacity) {
     if (typeof hexColor !== 'string') return '';
-    
+
     hexColor = hexColor.replace('#', '').toLowerCase();
-    
+
     if (hexColor.length === 3) {
-        hexColor = hexColor[0] + hexColor[0] + 
-        hexColor[1] + hexColor[1] + 
+        hexColor = hexColor[0] + hexColor[0] +
+        hexColor[1] + hexColor[1] +
         hexColor[2] + hexColor[2];
     } else if (hexColor.length !== 6) {
         return '';
     }
-    
+
     var r = hexColor[0] + hexColor[1];
     var g = hexColor[2] + hexColor[3];
     var b = hexColor[4] + hexColor[5];
-    
+
     var o = 'ff';
     if (typeof opacity === 'number' && opacity >= 0.0 && opacity <= 1.0) {
         o = (opacity * 255).toString(16);
         if (o.indexOf('.') > -1) o = o.substr(0, o.indexOf('.'));
         if (o.length < 2) o = '0' + o;
     }
-    
+
     return o + b + g + r;
 }
 
